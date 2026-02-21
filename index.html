@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Namaz Tracker</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Segoe UI, sans-serif;
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    color:white;
+}
+
+.container{
+    width:420px;
+    background:rgba(255,255,255,0.08);
+    border:2px solid #00ffcc;
+    border-radius:15px;
+    padding:25px;
+    box-shadow:0 0 25px rgba(0,255,200,0.4);
+    backdrop-filter:blur(10px);
+}
+
+h1{text-align:center;margin-bottom:5px;}
+.day{text-align:center;margin-bottom:20px;color:#00ffcc;}
+
+.namaz{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:10px 0;
+    padding:10px;
+    border-radius:8px;
+    transition:0.3s;
+}
+.namaz:hover{background:rgba(0,255,200,0.1);}
+
+/* DEFAULT CHECKBOX */
+input[type="checkbox"]{
+    width:28px;
+    height:28px;
+    appearance:none;
+    border:2px solid #00cc88;
+    border-radius:6px;
+    background:white;
+    cursor:pointer;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:18px;
+    font-weight:bold;
+    transition:0.3s ease;
+}
+
+/* TICK STATE */
+input[type="checkbox"].tick{
+    background:#00c853;      /* GREEN BACKGROUND */
+    border-color:#00c853;
+    color:white;
+}
+input[type="checkbox"].tick::after{
+    content:"✓";
+    color:white;
+}
+
+/* CROSS STATE */
+input[type="checkbox"].cross{
+    background:#e53935;      /* RED BACKGROUND */
+    border-color:#e53935;
+    color:white;
+}
+input[type="checkbox"].cross::after{
+    content:"✕";
+    color:white;
+}
+
+button{
+    width:100%;
+    margin-top:12px;
+    padding:8px;
+    background:#00ffcc;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
+}
+button:hover{background:#00ccaa;}
+
+.hadith{
+    margin-top:20px;
+    border-top:1px solid #00ffcc;
+    padding-top:10px;
+    font-size:14px;
+}
+
+.calendar-popup{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#1c2b33;
+    padding:20px;
+    border-radius:12px;
+    border:2px solid #00ffcc;
+    display:none;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Namaz</h1>
+    <div class="day" id="dayDisplay"></div>
+
+    <div class="namaz"><label>Fajr</label><input type="checkbox" data-name="fajr"></div>
+    <div class="namaz"><label>Dhuhr</label><input type="checkbox" data-name="dhuhr"></div>
+    <div class="namaz"><label>Asr</label><input type="checkbox" data-name="asr"></div>
+    <div class="namaz"><label>Maghrib</label><input type="checkbox" data-name="maghrib"></div>
+    <div class="namaz"><label>Isha</label><input type="checkbox" data-name="isha"></div>
+
+    <button onclick="openCalendar()">Previous / Select Date</button>
+
+    <div class="hadith">
+        <strong>Hadith:</strong><br>
+        The first matter that the slave will be brought to account for on the Day of Judgment is the prayer. (Tirmidhi)
+    </div>
+</div>
+
+<div class="calendar-popup" id="calendar">
+    <h3>Select Date</h3>
+    <input type="date" id="datePicker">
+    <button onclick="selectDate()">Open</button>
+</div>
+
+<script>
+let currentDate = new Date();
+const checkboxes = document.querySelectorAll("input[type='checkbox']");
+
+function formatDate(date){
+    return date.toISOString().split("T")[0];
+}
+
+function updateDisplay(){
+    let options = { weekday:'long', year:'numeric', month:'long', day:'numeric'};
+    document.getElementById("dayDisplay").innerText =
+        currentDate.toLocaleDateString('en-US', options);
+}
+
+function saveData(){
+    let data = {};
+    checkboxes.forEach(box=>{
+        if(box.classList.contains("tick")) data[box.dataset.name] = "tick";
+        else if(box.classList.contains("cross")) data[box.dataset.name] = "cross";
+        else data[box.dataset.name] = "none";
+    });
+    localStorage.setItem(formatDate(currentDate), JSON.stringify(data));
+}
+
+function loadData(){
+    let saved = localStorage.getItem(formatDate(currentDate));
+    checkboxes.forEach(box=>{
+        box.classList.remove("tick","cross");
+    });
+    if(saved){
+        let data = JSON.parse(saved);
+        checkboxes.forEach(box=>{
+            if(data[box.dataset.name] === "tick") box.classList.add("tick");
+            if(data[box.dataset.name] === "cross") box.classList.add("cross");
+        });
+    }
+}
+
+checkboxes.forEach(box=>{
+    box.addEventListener("click", function(e){
+        if(!this.classList.contains("cross")){
+            this.classList.toggle("tick");
+            this.classList.remove("cross");
+        }
+        saveData();
+        e.preventDefault();
+    });
+
+    box.addEventListener("dblclick", function(e){
+        this.classList.remove("tick");
+        this.classList.toggle("cross");
+        saveData();
+        e.preventDefault();
+    });
+});
+
+function openCalendar(){
+    document.getElementById("calendar").style.display="block";
+}
+
+function selectDate(){
+    let selected = document.getElementById("datePicker").value;
+    if(selected){
+        currentDate = new Date(selected);
+        updateDisplay();
+        loadData();
+        document.getElementById("calendar").style.display="none";
+    }
+}
+
+updateDisplay();
+loadData();
+</script>
+
+</body>
+</html>
