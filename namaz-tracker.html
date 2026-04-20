@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ur" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Namaz Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1117;
+    --surface: #161b27;
+    --surface2: #1d2535;
+    --border: #2a3347;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-dim: rgba(201,168,76,0.12);
+    --text: #e8e4da;
+    --text-muted: #7a8399;
+    --green: #4caf82;
+    --green-dim: rgba(76,175,130,0.12);
+    --red-dim: rgba(200,80,80,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* Background geometric pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(76,175,130,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .bismillah {
+    font-family: 'Amiri', serif;
+    font-size: 26px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    opacity: 0.9;
+  }
+
+  .name-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .user-name {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    border: none;
+    background: transparent;
+    text-align: center;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    min-width: 80px;
+    width: auto;
+    max-width: 260px;
+    border-bottom: 1.5px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .user-name:focus {
+    border-bottom-color: var(--gold);
+    cursor: text;
+  }
+
+  .edit-icon {
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .edit-icon:hover { opacity: 1; }
+
+  .date-line {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Date Nav ── */
+  .date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--gold);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    line-height: 1;
+  }
+  .nav-btn:hover { background: var(--gold-dim); }
+
+  .date-display {
+    text-align: center;
+  }
+
+  .date-main {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .date-hijri {
+    font-family: 'Amiri', serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-circle {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    flex-shrink: 0;
+  }
+
+  .progress-circle svg {
+    transform: rotate(-90deg);
+    width: 54px;
+    height: 54px;
+  }
+
+  .progress-circle .bg-ring {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 3;
+  }
+
+  .progress-circle .fg-ring {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 138.2;
+    stroke-dashoffset: 138.2;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+
+  .progress-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gold);
+  }
+
+  .progress-text {
+    flex: 1;
+  }
+
+  .progress-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-streak {
+    font-size: 12px;
+    color: var(--green);
+    margin-top: 5px;
+  }
+
+  /* ── Namaz Cards ── */
+  .namaz-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .namaz-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.25s, background 0.25s;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .namaz-card:hover { border-color: rgba(201,168,76,0.3); }
+
+  .namaz-card.done {
+    background: var(--green-dim);
+    border-color: rgba(76,175,130,0.3);
+  }
+
+  /* Custom checkbox */
+  .check-box {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    background: var(--surface2);
+  }
+
+  .namaz-card.done .check-box {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .check-tick {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .namaz-card.done .check-tick {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .namaz-info {
+    flex: 1;
+  }
+
+  .namaz-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .namaz-arabic {
+    font-family: 'Amiri', serif;
+    font-size: 14px;
+    color: var(--gold);
+    opacity: 0.7;
+  }
+
+  .namaz-time-display {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .namaz-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-edit-btn {
+    background: none;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+
+  .time-edit-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  /* ── Time Edit Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--gold);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .modal-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .modal-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .modal-field label {
+    font-size: 13px;
+    color: var(--text-muted);
+    min-width: 80px;
+  }
+
+  .modal-field input[type="time"] {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    text-align: right;
+    cursor: pointer;
+    color-scheme: dark;
+  }
+
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-cancel {
+    flex: 1;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-save {
+    flex: 1;
+    background: var(--gold);
+    border: none;
+    border-radius: 10px;
+    color: #0e1117;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-save:hover { background: var(--gold-light); }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* ── History Section ── */
+  .section-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .history-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hist-date {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .hist-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .hist-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .hist-dot.done { background: var(--green); }
+
+  .hist-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .footer-text {
+    font-family: 'Amiri', serif;
+    font-size: 15px;
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  /* ── Notification toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--green);
+    color: #fff;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    z-index: 200;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="bismillah">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+    <div class="name-wrap">
+      <input type="text" class="user-name" id="userName" value="Apna Naam Likhein" maxlength="30"
+        onclick="this.select()" oninput="saveName()" onkeydown="if(event.key==='Enter')this.blur()">
+      <span class="edit-icon" onclick="document.getElementById('userName').focus()">✏</span>
+    </div>
+    <div class="date-line" id="todayFull">—</div>
+  </div>
+
+  <!-- Date Navigation -->
+  <div class="date-nav">
+    <button class="nav-btn" onclick="changeDay(-1)">‹</button>
+    <div class="date-display">
+      <div class="date-main" id="navDateMain">—</div>
+      <div class="date-hijri" id="navDateSub">Aaj</div>
+    </div>
+    <button class="nav-btn" onclick="changeDay(1)">›</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-circle">
+      <svg viewBox="0 0 54 54">
+        <circle class="bg-ring" cx="27" cy="27" r="22"/>
+        <circle class="fg-ring" id="progressRing" cx="27" cy="27" r="22"/>
+      </svg>
+      <div class="progress-num" id="progressNum">0/5</div>
+    </div>
+    <div class="progress-text">
+      <div class="progress-label" id="progressLabel">Aaj ki namaz</div>
+      <div class="progress-bar"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+      <div class="progress-streak" id="streakText"></div>
+    </div>
+  </div>
+
+  <!-- Namaz Cards -->
+  <div class="namaz-list" id="namazList"></div>
+
+  <!-- History -->
+  <div class="section-title">Pichle 7 Din</div>
+  <div class="history-list" id="historyList"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-text">اَللّٰهُمَّ اَعِنِّی عَلٰی ذِکْرِکَ وَشُکْرِکَ وَحُسْنِ عِبَادَتِکَ</div>
+  </div>
+
+</div>
+
+<!-- Time Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Namaz ka Waqt</div>
+    <div class="modal-fields" id="modalFields"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModalDirect()">Wapas</button>
+      <button class="btn-save" onclick="saveModal()">Mahfooz Karein</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const NAMAZS = [
+  { key: 'fajr',   name: 'Fajr',   arabic: 'فجر',   defaultTime: '05:30' },
+  { key: 'zuhr',   name: 'Zuhr',   arabic: 'ظہر',   defaultTime: '12:30' },
+  { key: 'asr',    name: 'Asr',    arabic: 'عصر',   defaultTime: '16:00' },
+  { key: 'maghrib',name: 'Maghrib',arabic: 'مغرب',  defaultTime: '18:45' },
+  { key: 'isha',   name: 'Isha',   arabic: 'عشاء',  defaultTime: '20:15' },
+];
+
+let viewDate = todayKey();
+let modalTarget = null;
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function keyToDate(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function formatKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem('namazData') || '{}'); } catch(e) { return {}; }
+}
+
+function saveData(data) {
+  localStorage.setItem('namazData', JSON.stringify(data));
+}
+
+function getTimes() {
+  try { return JSON.parse(localStorage.getItem('namazTimes') || '{}'); } catch(e) { return {}; }
+}
+
+function saveTimes(t) {
+  localStorage.setItem('namazTimes', JSON.stringify(t));
+}
+
+function getTime(key) {
+  const times = getTimes();
+  const def = NAMAZS.find(n=>n.key===key);
+  return times[key] || (def ? def.defaultTime : '00:00');
+}
+
+function saveName() {
+  localStorage.setItem('namazUserName', document.getElementById('userName').value);
+}
+
+function loadName() {
+  const n = localStorage.getItem('namazUserName');
+  if (n) document.getElementById('userName').value = n;
+  autoWidth();
+}
+
+function autoWidth() {
+  const el = document.getElementById('userName');
+  const tmp = document.createElement('span');
+  tmp.style.cssText = 'position:absolute;visibility:hidden;font-size:22px;font-weight:500;font-family:DM Sans,sans-serif;';
+  tmp.textContent = el.value || el.placeholder;
+  document.body.appendChild(tmp);
+  el.style.width = (tmp.offsetWidth + 8) + 'px';
+  document.body.removeChild(tmp);
+}
+
+document.getElementById('userName').addEventListener('input', autoWidth);
+
+// Date display
+function urduDay(d) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return days[d.getDay()];
+}
+
+function urduMonth(d) {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[d.getMonth()];
+}
+
+function updateDateDisplay() {
+  const d = keyToDate(viewDate);
+  const today = todayKey();
+  const isToday = viewDate === today;
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const isYesterday = viewDate === formatKey(yesterday);
+
+  document.getElementById('navDateMain').textContent =
+    `${urduDay(d)}, ${d.getDate()} ${urduMonth(d)} ${d.getFullYear()}`;
+
+  document.getElementById('navDateSub').textContent =
+    isToday ? 'Aaj' : isYesterday ? 'Kal' : viewDate;
+
+  if (isToday) {
+    const opts = {weekday:'long', year:'numeric', month:'long', day:'numeric'};
+    document.getElementById('todayFull').textContent =
+      new Date().toLocaleDateString('en-PK', opts);
+  } else {
+    document.getElementById('todayFull').textContent =
+      d.toLocaleDateString('en-PK', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  }
+}
+
+function changeDay(delta) {
+  const d = keyToDate(viewDate);
+  d.setDate(d.getDate() + delta);
+  const newKey = formatKey(d);
+  const maxDate = new Date();
+  if (d > maxDate) return;
+  viewDate = newKey;
+  updateDateDisplay();
+  renderCards();
+  updateProgress();
+}
+
+// Render namaz cards
+function renderCards() {
+  const data = getData();
+  const dayData = data[viewDate] || {};
+  const list = document.getElementById('namazList');
+  list.innerHTML = '';
+
+  NAMAZS.forEach(n => {
+    const done = !!dayData[n.key];
+    const card = document.createElement('div');
+    card.className = 'namaz-card' + (done ? ' done' : '');
+    card.innerHTML = `
+      <div class="check-box">
+        <span class="check-tick">✓</span>
+      </div>
+      <div class="namaz-info">
+        <div class="namaz-name">
+          ${n.name}
+          <span class="namaz-arabic">${n.arabic}</span>
+        </div>
+        <div class="namaz-time-display">${getTime(n.key)}</div>
+      </div>
+      <div class="namaz-right">
+        <button class="time-edit-btn" onclick="openModal(event,'${n.key}')">Waqt ✏</button>
+      </div>
+    `;
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.time-edit-btn')) return;
+      toggleNamaz(n.key);
+    });
+    list.appendChild(card);
+  });
+}
+
+function toggleNamaz(key) {
+  const data = getData();
+  if (!data[viewDate]) data[viewDate] = {};
+  data[viewDate][key] = !data[viewDate][key];
+  saveData(data);
+  renderCards();
+  updateProgress();
+  renderHistory();
+  const namaz = NAMAZS.find(n=>n.key===key);
+  if (data[viewDate][key]) showToast(`${namaz.name} ✓ Ada ho gayi`);
+}
+
+function updateProgress() {
+  const data = getData();
+  const dayData = data[viewDate] || {};
+  const done = NAMAZS.filter(n => dayData[n.key]).length;
+  const total = 5;
+  const pct = (done/total)*100;
+
+  document.getElementById('progressNum').textContent = `${done}/${total}`;
+  document.getElementById('progressBarFill').style.width = pct + '%';
+
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (pct/100) * circumference;
+  document.getElementById('progressRing').style.strokeDashoffset = offset;
+
+  const isToday = viewDate === todayKey();
+  if (done === 5) {
+    document.getElementById('progressLabel').textContent = isToday ? 'Mashallah! Sab namaz ada! 🌙' : 'Uss din sab namaz ada!';
+  } else if (done === 0) {
+    document.getElementById('progressLabel').textContent = isToday ? 'Abhi koi namaz ada nahi' : 'Uss din koi namaz nahi';
+  } else {
+    document.getElementById('progressLabel').textContent = isToday ? `${done} ada, ${total-done} baki hain` : `${done} ada ki gayi`;
+  }
+
+  // Streak
+  let streak = 0;
+  let check = new Date();
+  const today = new Date();
+  while (true) {
+    const k = formatKey(check);
+    const d2 = getData()[k] || {};
+    const cnt = NAMAZS.filter(n=>d2[n.key]).length;
+    if (cnt === 5) { streak++; check.setDate(check.getDate()-1); }
+    else break;
+    if (streak > 365) break;
+  }
+  const streakEl = document.getElementById('streakText');
+  if (streak > 0) {
+    streakEl.textContent = `🔥 ${streak} din ka silsila jari hai`;
+  } else {
+    streakEl.textContent = '';
+  }
+}
+
+// History
+function renderHistory() {
+  const data = getData();
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = formatKey(d);
+    const dayData = data[k] || {};
+    const done = NAMAZS.filter(n=>dayData[n.key]).length;
+
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const dots = NAMAZS.map(n =>
+      `<div class="hist-dot ${dayData[n.key] ? 'done' : ''}"></div>`
+    ).join('');
+
+    const dayLabel = i === 1 ? 'Kal' : `${i} din pehle`;
+
+    item.innerHTML = `
+      <div class="hist-date">${dayLabel}<br><span style="font-size:11px;opacity:0.6">${d.getDate()} ${urduMonth(d)}</span></div>
+      <div class="hist-dots">${dots}</div>
+      <div class="hist-count" style="color:${done===5?'var(--green)':done===0?'var(--text-muted)':'var(--gold)'}">${done}/5</div>
+    `;
+    list.appendChild(item);
+  }
+}
+
+// Modal
+function openModal(e, key) {
+  e.stopPropagation();
+  modalTarget = key;
+  const n = NAMAZS.find(x=>x.key===key);
+  document.getElementById('modalTitle').textContent = `${n.name} ${n.arabic} — Waqt`;
+  const fields = document.getElementById('modalFields');
+  fields.innerHTML = `
+    <div class="modal-field">
+      <label>Namaz ka Waqt</label>
+      <input type="time" id="modalTime" value="${getTime(key)}">
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  modalTarget = null;
+}
+
+function saveModal() {
+  if (!modalTarget) return;
+  const t = document.getElementById('modalTime').value;
+  if (!t) return;
+  const times = getTimes();
+  times[modalTarget] = t;
+  saveTimes(times);
+  closeModalDirect();
+  renderCards();
+  showToast('Waqt mahfooz ho gaya ✓');
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Init
+function init() {
+  loadName();
+  updateDateDisplay();
+  renderCards();
+  updateProgress();
+  renderHistory();
+}
+
+init();
+</script>
+</body>
+</html>
